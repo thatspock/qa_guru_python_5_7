@@ -11,11 +11,13 @@ import os
 
 def test_download_file_with_browser():
     options = webdriver.ChromeOptions()
+    project_root_path = os.path.dirname(__file__)
     download_folder = 'resources'
     prefs = {
-        "download.default_directory": os.path.join(os.path.dirname(__file__), download_folder),
+        "download.default_directory": os.path.join(project_root_path, download_folder),
         "download.prompt_for_download": False
     }
+
     options.add_experimental_option("prefs", prefs)
 
     browser.config.driver_options = options
