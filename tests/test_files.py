@@ -1,24 +1,28 @@
-from zipfile import ZipFile
+import os
 import time
+import requests
+import xlrd
+from zipfile import ZipFile
 from selene import browser
 from selenium import webdriver
-import os
-import requests
 from pypdf import PdfReader
-import xlrd
 from openpyxl import load_workbook
+
+download_folder = 'resources'
+current_path = os.path.abspath(__file__)
+directory_path = os.path.dirname(current_path)
+resources_path = os.path.join(directory_path, '..', download_folder)
+resources_path = os.path.normpath(resources_path)
+print(resources_path)
 
 
 # TODO оформить в тест, добавить ассерты и использовать универсальный путь к tmp
 def test_download_file_with_browser():
     options = webdriver.ChromeOptions()
-    project_root_path = os.path.dirname(__file__)
-    download_folder = 'resources'
     prefs = {
-        "download.default_directory": os.path.join(project_root_path, download_folder),
+        "download.default_directory": resources_path,
         "download.prompt_for_download": False
     }
-
     options.add_experimental_option("prefs", prefs)
 
     browser.config.driver_options = options
@@ -28,7 +32,7 @@ def test_download_file_with_browser():
     browser.element('[data-open-app="link"]').click()
     time.sleep(10)
 
-    downloaded_file_path = os.path.join(download_folder, 'pytest-main.zip')
+    downloaded_file_path = os.path.join(resources_path, 'pytest-main.zip')
     assert os.path.exists(downloaded_file_path), f"The file {downloaded_file_path} was not downloaded"
 
     file_size = os.path.getsize(downloaded_file_path)
@@ -38,10 +42,9 @@ def test_download_file_with_browser():
 # TODO сохранять и читать из tmp, использовать универсальный путь
 def test_downloaded_file_size():
     url = 'https://selenium.dev/images/selenium_logo_square_green.png'
-    download_folder = 'resources'
 
     r = requests.get(url)
-    downloaded_file_path = os.path.join(download_folder, 'selenium_logo.png')
+    downloaded_file_path = os.path.join(resources_path, 'selenium_logo.png')
 
     with open(downloaded_file_path, 'wb') as file:
         file.write(r.content)
@@ -53,8 +56,7 @@ def test_downloaded_file_size():
 
 # TODO оформить в тест, добавить ассерты и использовать универсальный путь
 def test_pdf():
-    download_folder = 'resources'
-    pdf_file_path = os.path.join(download_folder, 'docs-pytest-org-en-latest.pdf')
+    pdf_file_path = os.path.join(resources_path, 'docs-pytest-org-en-latest.pdf')
 
     assert os.path.exists(pdf_file_path), f'Pdf file {pdf_file_path} was not found'
 
@@ -75,8 +77,7 @@ def test_pdf():
 
 # TODO оформить в тест, добавить ассерты и использовать универсальный путь
 def test_xls():
-    download_folder = 'resources'
-    xls_file_path = os.path.join(download_folder, 'file_example_XLS_10.xls')
+    xls_file_path = os.path.join(resources_path, 'file_example_XLS_10.xls')
 
     assert os.path.exists(xls_file_path), f'XLS file {xls_file_path} was not found'
 
@@ -104,8 +105,7 @@ def test_xls():
 
 # TODO оформить в тест, добавить ассерты и использовать универсальный путь
 def test_xlsx():
-    download_folder = 'resources'
-    xlsx_file_path = os.path.join(download_folder, 'file_example_XLSX_50.xlsx')
+    xlsx_file_path = os.path.join(resources_path, 'file_example_XLSX_50.xlsx')
 
     assert os.path.exists(xlsx_file_path), f'XLSX file {xlsx_file_path} was not found'
 
@@ -119,22 +119,21 @@ def test_xlsx():
 
 # TODO Заархивировать имеющиеся в resources различные типы файлов в один архив
 def test_zip():
-    download_folder = 'resources'
-    zip_file_path = os.path.join(download_folder, 'final.zip')
+    zip_file_path = os.path.join(resources_path, 'final.zip')
 
-    pdf_pytest = os.path.join(download_folder, 'docs-pytest-org-en-latest.pdf')
-    file_xls = os.path.join(download_folder, 'file_example_XLS_10.xls')
-    file_xlsx = os.path.join(download_folder, 'file_example_XLSX_50.xlsx')
-    logo = os.path.join(download_folder, 'selenium_logo.png')
+    pdf_pytest = os.path.join(resources_path, 'docs-pytest-org-en-latest.pdf')
+    file_xls = os.path.join(resources_path, 'file_example_XLS_10.xls')
+    file_xlsx = os.path.join(resources_path, 'file_example_XLSX_50.xlsx')
+    logo = os.path.join(resources_path, 'selenium_logo.png')
 
     list_files = [pdf_pytest, file_xls, file_xlsx, logo]
 
     with ZipFile(zip_file_path, 'w') as zipF:
         for file in list_files:
-            zipF.write(file)
+            zipF.write(file, os.path.relpath(file, resources_path))
 
     with ZipFile(zip_file_path) as zipR:
         for file in list_files:
             unzipped_path = zipR.namelist()[list_files.index(file)]
-            assert unzipped_path == file
-            assert os.path.getsize(unzipped_path) == os.path.getsize(file)
+            assert unzipped_path == os.path.relpath(file, resources_path)
+            assert os.path.getsize(os.path.join(resources_path, unzipped_path)) == os.path.getsize(file)
