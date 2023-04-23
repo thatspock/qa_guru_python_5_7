@@ -5,11 +5,14 @@ import requests
 def test_downloaded_file_size():
     # TODO сохранять и читать из tmp, использовать универсальный путь
     url = 'https://selenium.dev/images/selenium_logo_square_green.png'
+    download_folder = 'resources'
 
     r = requests.get(url)
-    with open('selenium_logo.png', 'wb') as file:
+    downloaded_file_path = os.path.join(download_folder, 'selenium_logo.png')
+
+    with open(downloaded_file_path, 'wb') as file:
         file.write(r.content)
 
-    size = os.path.getsize('selenium_logo.png')
+    size = os.path.getsize(downloaded_file_path)
 
     assert size == 30803
